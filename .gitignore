@@ -1,3 +1,4 @@
 repos/*
 volumes/redmine/mysql/*
 config/configuration.yml
+redmine.sql
