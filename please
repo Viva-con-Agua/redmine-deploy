@@ -1,0 +1,32 @@
+#!/bin/bash
+
+source .env
+
+up() {
+    dir=$(pwd)
+    if [ ! -f ./config/configuration.yml ]; then
+        echo "Please copy configfiguration_scel.yml to configfiguration.yml and edit smpt settings"
+        exit 1  
+    fi
+    if [ ! -d ./repos ]; then
+        mkdir repos && cd repos && git clone https://github.com/docker-library/redmine
+        cd ${dir}
+    fi
+    if [ ! -d ./volumes ]; then
+        mkdir volumes && mkdir volumes/redmine
+        cd ${dir}
+    fi
+    docker-compose up -d --build redmine-app
+}
+
+print_help() {
+    echo "please script for handling the vca api docker"
+    echo "Syntax: please [command]"
+    echo "commands:"
+    echo "  up      Set up redmine"
+}
+
+case $1 in 
+    up) up;;
+    *) print_help
+esac

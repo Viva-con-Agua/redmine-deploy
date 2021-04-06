@@ -2,37 +2,42 @@ version: '3.1'
 
 services:
 
-    redmine-app:
-        image: redmine
-        build: 
-            context: ./repos/redmine/4.1/
-            Dockerfile: Dockerfile
-        container_name: redmine-app
-        restart: unless-stopped
-        environment:
-            REDMINE_DB_MYSQL: redmine_db
-            REDMINE_DB_PASSWORD: redmine
-            REDMINE_SECRET_KEY_BASE: redmine_key_base
-        volumes:
-            - ./config/configuration.yml:/usr/src/redmine/config/configuration.yml
-        networks:
-            default:
-                ipv4_address: 172.2.110.112
+  redmine-app:
+    image: redmine
+    build: 
+      context: ./repos/redmine/4.1/
+      dockerfile: Dockerfile
+    container_name: redmine-app
+    restart: unless-stopped
+    environment:
+      REDMINE_DB_MYSQL: redmine_db
+      REDMINE_DB_PASSWORD: redmine
+      REDMINE_SECRET_KEY_BASE: redmine_key_base
+    volumes:
+       - ./config/configuration.yml:/usr/src/redmine/config/configuration.yml
+    networks:
+      db_net:
+      domain_net:
+    links:
+      - redmine_db:db
 
-    redmine_db:
-        image: mysql:5.7
-        container_name: redmine-db
-        restart: always
-        environment:
-            MYSQL_ROOT_PASSWORD: redmine
-            MYSQL_DATABASE: redmine
-        volumes: 
-            - ./volumes/redmine/mysql/:/var/lib/mysql/
-        networks:
-            default:
-                ipv4_address: 172.2.112.110
+  redmine_db:
+    image: mysql:5.7
+    container_name: redmine-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: redmine
+      MYSQL_DATABASE: redmine
+    volumes: 
+      - ./volumes/redmine/mysql/:/var/lib/mysql/
+    networks:
+      db_net:
 
 networks:
-    default:
-        external:
-            name: pool-network
+  domain_net:
+    external:
+        name: domain_net
+  db_net:
+    external:
+        name: db_net
+
