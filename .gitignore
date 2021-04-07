@@ -1,4 +1,5 @@
 repos/*
-volumes/redmine/mysql/*
+volumes/*
 config/configuration.yml
-redmine.sql
+cronjob.sh
+redmine*.sql

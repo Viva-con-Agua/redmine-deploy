@@ -1,20 +1,18 @@
-FROM ruby:%%RUBY_VERSION%%-alpine3.13
+FROM ruby:2.6-slim-buster
 
 # explicitly set uid/gid to guarantee that it won't change in the future
 # the values 999:999 are identical to the current user/group id assigned
-# alpine already has a gid 999, so we'll use the next id
-RUN addgroup -S -g 1000 redmine && adduser -S -H -G redmine -u 999 redmine
+RUN groupadd -r -g 999 redmine && useradd -r -g redmine -u 999 redmine
 
 RUN set -eux; \
-	apk add --no-cache \
-		bash \
+	apt-get update; \
+	apt-get install -y --no-install-recommends \
 		ca-certificates \
-		su-exec \
-		tini \
-		tzdata \
 		wget \
 		\
+		bzr \
 		git \
+		cron \
 		mercurial \
 		openssh-client \
 		subversion \
@@ -22,9 +20,55 @@ RUN set -eux; \
 # we need "gsfonts" for generating PNGs of Gantt charts
 # and "ghostscript" for creating PDF thumbnails (in 4.1+)
 		ghostscript \
-		ghostscript-fonts \
+		gsfonts \
 		imagemagick \
-	;
+		\
+# https://github.com/docker-library/ruby/issues/344
+		shared-mime-info \
+	; \
+	rm -rf /var/lib/apt/lists/*
+
+RUN set -eux; \
+	savedAptMark="$(apt-mark showmanual)"; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends \
+		dirmngr \
+		gnupg \
+	; \
+	rm -rf /var/lib/apt/lists/*; \
+	\
+	dpkgArch="$(dpkg --print-architecture | awk -F- '{ print $NF }')"; \
+	\
+# grab gosu for easy step-down from root
+# https://github.com/tianon/gosu/releases
+	export GOSU_VERSION='1.12'; \
+	wget -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$dpkgArch"; \
+	wget -O /usr/local/bin/gosu.asc "https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$dpkgArch.asc"; \
+	export GNUPGHOME="$(mktemp -d)"; \
+	gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4; \
+	gpg --batch --verify /usr/local/bin/gosu.asc /usr/local/bin/gosu; \
+	gpgconf --kill all; \
+	rm -r "$GNUPGHOME" /usr/local/bin/gosu.asc; \
+	chmod +x /usr/local/bin/gosu; \
+	gosu nobody true; \
+	\
+# grab tini for signal processing and zombie killing
+# https://github.com/krallin/tini/releases
+	export TINI_VERSION='0.19.0'; \
+	wget -O /usr/local/bin/tini "https://github.com/krallin/tini/releases/download/v$TINI_VERSION/tini-$dpkgArch"; \
+	wget -O /usr/local/bin/tini.asc "https://github.com/krallin/tini/releases/download/v$TINI_VERSION/tini-$dpkgArch.asc"; \
+	export GNUPGHOME="$(mktemp -d)"; \
+	gpg --batch --keyserver ha.pool.sks-keyservers.net --recv-keys 6380DC428747F6C393FEACA59A84159D7001A4E5; \
+	gpg --batch --verify /usr/local/bin/tini.asc /usr/local/bin/tini; \
+	gpgconf --kill all; \
+	rm -r "$GNUPGHOME" /usr/local/bin/tini.asc; \
+	chmod +x /usr/local/bin/tini; \
+	tini -h; \
+	\
+# reset apt-mark's "manual" list so that "purge --auto-remove" will remove all build dependencies
+	apt-mark auto '.*' > /dev/null; \
+	[ -z "$savedAptMark" ] || apt-mark manual $savedAptMark; \
+	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
 
 ENV RAILS_ENV production
 WORKDIR /usr/src/redmine
@@ -38,12 +82,12 @@ RUN set -eux; \
 	chown redmine:redmine "$HOME"; \
 	chmod 1777 "$HOME"
 
-ENV REDMINE_VERSION %%REDMINE_VERSION%%
-ENV REDMINE_DOWNLOAD_MD5 %%REDMINE_DOWNLOAD_MD5%%
+ENV REDMINE_VERSION 4.1.2
+ENV REDMINE_DOWNLOAD_SHA256 7e22397351c53fe8fe4444c01c4e0640d9cefb17b9ac765b846df27627cd228e
 
 RUN set -eux; \
 	wget -O redmine.tar.gz "https://www.redmine.org/releases/redmine-${REDMINE_VERSION}.tar.gz"; \
-	echo "$REDMINE_DOWNLOAD_MD5 *redmine.tar.gz" | md5sum -c -; \
+	echo "$REDMINE_DOWNLOAD_SHA256 *redmine.tar.gz" | sha256sum -c -; \
 	tar -xf redmine.tar.gz --strip-components=1; \
 	rm redmine.tar.gz files/delete.me log/delete.me; \
 	mkdir -p log public/plugin_assets sqlite tmp/pdf tmp/pids; \
@@ -56,46 +100,50 @@ RUN set -eux; \
 
 RUN set -eux; \
 	\
-	apk add --no-cache --virtual .build-deps \
-		coreutils \
+	savedAptMark="$(apt-mark showmanual)"; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends \
 		freetds-dev \
 		gcc \
+		libmariadbclient-dev \
+		libpq-dev \
+		libsqlite3-dev \
 		make \
-		mariadb-dev \
-		musl-dev \
 		patch \
-		postgresql-dev \
-		sqlite-dev \
-		ttf2ufm \
-		zlib-dev \
-# in 4.1+, imagemagick-dev is no longer necessary/used: https://www.redmine.org/issues/30492
-		imagemagick-dev \
 	; \
+	rm -rf /var/lib/apt/lists/*; \
 	\
-	su-exec redmine bundle install --jobs "$(nproc)" --without development test; \
+	gosu redmine bundle config --local without 'development test'; \
+# fill up "database.yml" with bogus entries so the redmine Gemfile will pre-install all database adapter dependencies
+# https://github.com/redmine/redmine/blob/e9f9767089a4e3efbd73c35fc55c5c7eb85dd7d3/Gemfile#L50-L79
+	echo '# the following entries only exist to force `bundle install` to pre-install all database adapter dependencies -- they can be safely removed/ignored' > ./config/database.yml; \
 	for adapter in mysql2 postgresql sqlserver sqlite3; do \
-		echo "$RAILS_ENV:" > ./config/database.yml; \
+		echo "$adapter:" >> ./config/database.yml; \
 		echo "  adapter: $adapter" >> ./config/database.yml; \
-		su-exec redmine bundle install --jobs "$(nproc)" --without development test; \
-		cp Gemfile.lock "Gemfile.lock.${adapter}"; \
 	done; \
+	gosu redmine bundle install --jobs "$(nproc)"; \
 	rm ./config/database.yml; \
 # fix permissions for running as an arbitrary user
 	chmod -R ugo=rwX Gemfile.lock "$GEM_HOME"; \
-# this requires coreutils because "chmod +X" in busybox will remove +x on files (and coreutils leaves files alone with +X)
 	rm -rf ~redmine/.bundle; \
 	\
-# https://github.com/naitoh/rbpdf/issues/31
-	rm /usr/local/bundle/gems/rbpdf-font-1.19.*/lib/fonts/ttf2ufm/ttf2ufm; \
-	\
-	runDeps="$( \
-		scanelf --needed --nobanner --format '%n#p' --recursive /usr/local/bundle/gems \
-		| tr ',' '\n' \
+# reset apt-mark's "manual" list so that "purge --auto-remove" will remove all build dependencies
+	apt-mark auto '.*' > /dev/null; \
+	[ -z "$savedAptMark" ] || apt-mark manual $savedAptMark; \
+	find /usr/local -type f -executable -exec ldd '{}' ';' \
+		| awk '/=>/ { print $(NF-1) }' \
 		| sort -u \
-		| awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
-	)"; \
-	apk add --no-network --virtual .redmine-rundeps $runDeps; \
-	apk del --no-network .build-deps
+		| grep -v '^/usr/local/' \
+		| xargs -r dpkg-query --search \
+		| cut -d: -f1 \
+		| sort -u \
+		| xargs -r apt-mark manual \
+	; \
+	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
+
+
+ENV TZ=Europe/Berlin
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 VOLUME /usr/src/redmine/files
 

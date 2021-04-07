@@ -5,7 +5,11 @@ source .env
 up() {
     dir=$(pwd)
     if [ ! -f ./config/configuration.yml ]; then
-        echo "Please copy configfiguration_scel.yml to configfiguration.yml and edit smpt settings"
+        echo "Please copy configfiguration.yml.example to configfiguration.yml and edit smtp settings"
+        exit 1  
+    fi
+    if [ ! -f ./cronjob.sh ]; then
+        echo "Please copy cronjob.sh.example to cronjob.sh.example and edit imap settings"
         exit 1  
     fi
     if [ ! -d ./repos ]; then
@@ -13,20 +17,34 @@ up() {
         cd ${dir}
     fi
     if [ ! -d ./volumes ]; then
-        mkdir volumes && mkdir volumes/redmine
+        mkdir volumes && mkdir volumes/redmine && mkdir volumes/redmine/mysql && mkdir volumes/redmine/logs && mkdir volumes/redmine/files
         cd ${dir}
     fi
     docker-compose up -d --build redmine-app
 }
+
+down() {
+    docker-compose down
+}
+
+reup() {
+    down
+    up
+}
+
 
 print_help() {
     echo "please script for handling the vca api docker"
     echo "Syntax: please [command]"
     echo "commands:"
     echo "  up      Set up redmine"
+    echo "  down    Shutdown redmine"
+    echo "  reup    Shutdown and re up redmine"
 }
 
 case $1 in 
     up) up;;
+    reup) reup;;
+    down) down;;
     *) print_help
 esac
