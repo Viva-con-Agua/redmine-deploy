@@ -13,12 +13,11 @@ up() {
         exit 1  
     fi
     if [ ! -d ./repos ]; then
-        mkdir repos && cd repos && git clone https://github.com/docker-library/redmine
+        mkdir -p repos && cd repos && git clone https://github.com/docker-library/redmine
         cd ${dir}
     fi
     if [ ! -d ./volumes ]; then
-        mkdir volumes && mkdir volumes/redmine && mkdir volumes/redmine/mysql && mkdir volumes/redmine/logs && mkdir volumes/redmine/files
-        chmod 777 volumes/redmine/mysql
+        mkdir -p volumes && mkdir -p volumes/redmine && mkdir -p volumes/redmine/mysql && mkdir -p volumes/redmine/logs && mkdir -p volumes/redmine/files
         cd ${dir}
     fi
     docker-compose up -d --build redmine-app
