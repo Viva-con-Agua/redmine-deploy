@@ -1,5 +1,6 @@
+.env
+_bak
 repos/*
 volumes/*
 config/configuration.yml
-cronjob.sh
 redmine*.sql
