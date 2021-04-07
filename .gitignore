@@ -1,3 +1,6 @@
+.env
+_bak
 repos/*
-volumes/redmine/mysql/*
+volumes/*
 config/configuration.yml
+redmine*.sql

@@ -14,7 +14,6 @@ services:
       REDMINE_DB_MYSQL: redmine_db
       REDMINE_DB_PASSWORD: ${REDMINE_DB_PASSWORD}
       REDMINE_SECRET_KEY_BASE: redmine_key_base
-      TZ: 'Europe/Berlin'
     volumes:
        - ./config/configuration.yml:/usr/src/redmine/config/configuration.yml
        - ./volumes/redmine/logs:/usr/src/redmine/log

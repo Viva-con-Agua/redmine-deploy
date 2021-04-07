@@ -1,0 +1,66 @@
+#!/bin/bash
+
+source .env
+
+up() {
+    dir=$(pwd)
+    if [ ! -f ./config/configuration.yml ]; then
+        echo "Please copy configfiguration.yml.example to configfiguration.yml and edit smtp settings"
+        exit 1  
+    fi
+    if [ ! -f ./.env ]; then
+        echo "Please copy env_plain to .env and edit settings"
+        exit 1  
+    fi
+    if [ ! -d ./repos ]; then
+        mkdir repos && cd repos && git clone https://github.com/docker-library/redmine
+        cd ${dir}
+    fi
+    if [ ! -d ./volumes ]; then
+        mkdir volumes && mkdir volumes/redmine && mkdir volumes/redmine/mysql && mkdir volumes/redmine/logs && mkdir volumes/redmine/files
+        chmod 777 volumes/redmine/mysql
+        cd ${dir}
+    fi
+    docker-compose up -d --build redmine-app
+}
+
+down() {
+    docker-compose down
+}
+
+reup() {
+    down
+    up
+}
+
+backup() {
+    if [ ! -d ./_bak ]; then
+        mkdir _bak
+    fi
+
+    case ${1} in
+        restore) docker exec -i redmine-db mysql -u ${REDMINE_DB_USER} -p${REDMINE_DB_PASSWORD} ${REDMINE_DB} < _bak/redmine.sql;;
+        dump) docker exec -i redmine-db mysqldump -u ${REDMINE_DB_USER} -p${REDMINE_DB_PASSWORD} ${REDMINE_DB} > _bak/redmine.sql;;
+        *) ""
+    esac
+
+}
+
+
+print_help() {
+    echo "please script for handling the vca api docker"
+    echo "Syntax: please [command]"
+    echo "commands:"
+    echo "  up                      Set up redmine"
+    echo "  down                    Shutdown redmine"
+    echo "  reup                    Shutdown and re up redmine"
+    echo "  backup [dump/restore]   Create redmine.sql in folder _bak or restore from redmine.sql"
+}
+
+case $1 in 
+    up) up;;
+    reup) reup;;
+    down) down;;
+    backup) backup $2;;
+    *) print_help
+esac
