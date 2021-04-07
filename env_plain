@@ -3,6 +3,7 @@
 # Config file for vivaconagua api services
 
 # Can be set prod for production and dev for develop cases
+TZ='Europe/Berlin'
 DEPLOY_MODE=dev
 
 REDMINE_DB=redmine
