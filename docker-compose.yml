@@ -15,14 +15,14 @@ services:
       REDMINE_DB_PASSWORD: ${REDMINE_DB_PASSWORD}
       REDMINE_SECRET_KEY_BASE: redmine_key_base
     volumes:
-       - ./.env:/usr/src/redmine/.env
        - ./config/configuration.yml:/usr/src/redmine/config/configuration.yml
        - ./volumes/redmine/logs:/usr/src/redmine/log
        - ./cronjob.sh:/usr/src/redmine/cronjob.sh
        - ./volumes/redmine/files:/usr/src/redmine/files
+       - ./.env:/usr/src/redmine/.env
     networks:
-      db_net:
-      api_net:
+      default:
+        ipv4_address: 172.2.110.112
     links:
       - redmine_db:db
 
@@ -34,15 +34,12 @@ services:
       MYSQL_ROOT_PASSWORD: ${REDMINE_DB_PASSWORD}
       MYSQL_DATABASE: ${REDMINE_DB}
     volumes: 
-      - ./volumes/redmine/mysql:/var/lib/mysql
+      - redmine:./volumes/redmine/mysql:/var/lib/mysql
     networks:
-      db_net:
+      default:
+        ipv4_address: 172.2.112.110
 
 networks:
-  api_net:
+  default:
     external:
-        name: api_net
-  db_net:
-    external:
-        name: db_net
-
+      name: pool-network
