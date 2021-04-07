@@ -2,37 +2,45 @@ version: '3.1'
 
 services:
 
-    redmine-app:
-        image: redmine
-        build: 
-            context: ./repos/redmine/4.1/
-            Dockerfile: Dockerfile
-        container_name: redmine-app
-        restart: unless-stopped
-        environment:
-            REDMINE_DB_MYSQL: redmine_db
-            REDMINE_DB_PASSWORD: redmine
-            REDMINE_SECRET_KEY_BASE: redmine_key_base
-        volumes:
-            - ./config/configuration.yml:/usr/src/redmine/config/configuration.yml
-        networks:
-            default:
-                ipv4_address: 172.2.110.112
+  redmine-app:
+    image: redmine
+    build: 
+      context: .
+      dockerfile: redmine_4_2.Dockerfile
+    container_name: redmine-app
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      REDMINE_DB_MYSQL: redmine_db
+      REDMINE_DB_PASSWORD: ${REDMINE_DB_PASSWORD}
+      REDMINE_SECRET_KEY_BASE: redmine_key_base
+      TZ: 'Europe/Berlin'
+    volumes:
+       - ./config/configuration.yml:/usr/src/redmine/config/configuration.yml
+       - ./volumes/redmine/logs:/usr/src/redmine/log
+       - ./cronjob.sh:/usr/src/redmine/cronjob.sh
+       - ./volumes/redmine/files:/usr/src/redmine/files
+       - ./.env:/usr/src/redmine/.env
+    networks:
+      default:
+        ipv4_address: 172.2.110.112
+    links:
+      - redmine_db:db
 
-    redmine_db:
-        image: mysql:5.7
-        container_name: redmine-db
-        restart: always
-        environment:
-            MYSQL_ROOT_PASSWORD: redmine
-            MYSQL_DATABASE: redmine
-        volumes: 
-            - ./volumes/redmine/mysql/:/var/lib/mysql/
-        networks:
-            default:
-                ipv4_address: 172.2.112.110
+  redmine_db:
+    image: mysql:5.7
+    container_name: redmine-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${REDMINE_DB_PASSWORD}
+      MYSQL_DATABASE: ${REDMINE_DB}
+    volumes: 
+      - redmine:./volumes/redmine/mysql:/var/lib/mysql
+    networks:
+      default:
+        ipv4_address: 172.2.112.110
 
 networks:
-    default:
-        external:
-            name: pool-network
+  default:
+    external:
+      name: pool-network
