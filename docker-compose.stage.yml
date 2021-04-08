@@ -21,8 +21,8 @@ services:
        - ./cronjob.sh:/usr/src/redmine/cronjob.sh
        - ./volumes/redmine/files:/usr/src/redmine/files
     networks:
-      db_net:
-      api_net:
+      default:
+        ipv4_address: 172.2.110.112
     links:
       - redmine_db:db
 
@@ -36,13 +36,10 @@ services:
     volumes: 
       - ./volumes/redmine/mysql:/var/lib/mysql
     networks:
-      db_net:
+      default:
+        ipv4_address: 172.2.112.110
 
 networks:
-  api_net:
+  default:
     external:
-        name: api_net
-  db_net:
-    external:
-        name: db_net
-
+      name: pool-network
