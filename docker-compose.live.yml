@@ -5,7 +5,7 @@ services:
   redmine-app:
     image: redmine
     build: 
-      context: ./4.1/
+      context: ./4.2/
       dockerfile: Dockerfile
     container_name: redmine-app
     restart: unless-stopped
