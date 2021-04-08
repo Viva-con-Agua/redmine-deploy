@@ -5,7 +5,7 @@ services:
   redmine-app:
     image: redmine
     build: 
-      context: ./4.2/
+      context: ./4.1/
       dockerfile: Dockerfile
     container_name: redmine-app
     restart: unless-stopped
@@ -22,7 +22,7 @@ services:
        - ./volumes/redmine/files:/usr/src/redmine/files
     networks:
       db_net:
-      api_net:
+      domain_net:
     links:
       - redmine_db:db
 
@@ -34,14 +34,14 @@ services:
       MYSQL_ROOT_PASSWORD: ${REDMINE_DB_PASSWORD}
       MYSQL_DATABASE: ${REDMINE_DB}
     volumes: 
-      - ./volumes/redmine/mysql:/var/lib/mysql
+      - ./volumes/redmine/mysql:/var/lib/mysql/
     networks:
       db_net:
 
 networks:
-  api_net:
+  domain_net:
     external:
-        name: api_net
+        name: domain_net
   db_net:
     external:
         name: db_net
