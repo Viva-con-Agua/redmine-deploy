@@ -3,3 +3,4 @@ _bak
 repos/*
 volumes/*
 redmine*.sql
+config/configuration.yml
