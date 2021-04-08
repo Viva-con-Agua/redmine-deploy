@@ -1,0 +1,1 @@
+*/1 * * * * /usr/src/redmine/cronjob.sh >> /usr/src/redmine/log/cron.log 2>&1

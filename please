@@ -17,10 +17,10 @@ up() {
         cd ${dir}
     fi
     if [ ! -d ./volumes ]; then
-        mkdir -p volumes && mkdir -p volumes/redmine && mkdir -p volumes/redmine/mysql && mkdir -p volumes/redmine/logs && mkdir -p volumes/redmine/files
+        mkdir -p volumes && mkdir -p volumes/redmine && mkdir -p volumes/redmine/logs && mkdir -p volumes/redmine/files
         cd ${dir}
     fi
-    docker-compose up -d --build redmine-app
+    docker-compose up -d --build
 }
 
 down() {
