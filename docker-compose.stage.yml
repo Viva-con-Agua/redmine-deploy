@@ -19,6 +19,7 @@ services:
        - ./config/configuration.yml:/usr/src/redmine/config/configuration.yml
        - ./volumes/redmine/logs:/usr/src/redmine/log
        - ./cronjob.sh:/usr/src/redmine/cronjob.sh
+       - ./crontab:/usr/src/redmine/crontab
        - ./volumes/redmine/files:/usr/src/redmine/files
     networks:
       default:
