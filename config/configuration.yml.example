@@ -51,18 +51,21 @@ default:
   # http://www.redmine.org/projects/redmine/wiki/EmailConfiguration
   #
   # Outgoing emails configuration (see examples above)
-  email_delivery:
-    delivery_method: :smtp
-  smtp_settings:
-    address: ${REDMINE_SMTP_EMAIL_HOST}
-    port: 465
-    ssl: true
-    enable_starttls_auto: true
-    domain: ${REDMINE_SMTP_EMAIL_DOMAIN}
-    authentication: :login
-    user_name: ${REDMINE_SMTP_EMAIL_ADDRESS}
-    password: ${REDMINE_SMTP_EMAIL_PASSWORD}
-  #
+
+  # ENABLE AND EDIT <> HERE FOR SENDING MAILS 
+  # email_delivery:
+  #   delivery_method: :smtp
+  # smtp_settings:
+  #   address: <host>
+  #   port: 465
+  #   ssl: true
+  #   enable_starttls_auto: true
+  #   domain: <domain>
+  #   authentication: :login
+  #   user_name: <email>
+  #   password: <password>
+  
+
   # ==== Sendmail command
   #
   #  email_delivery:
