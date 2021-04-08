@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 service cron start
-crontab /usr/src/redmine/crontab
+crontab -u redmine /usr/src/redmine/crontab
 
 set -Eeo pipefail
 # TODO add "-u"
