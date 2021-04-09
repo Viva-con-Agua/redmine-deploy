@@ -141,10 +141,7 @@ RUN set -eux; \
 	; \
 	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
 
-#COPY crontab ./
-#COPY cronjob.sh ./
-#RUN chown redmine:redmine crontab
-#RUN chown redmine:redmine cronjob.sh
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 VOLUME /usr/src/redmine/files
 
