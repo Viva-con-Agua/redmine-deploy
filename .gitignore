@@ -4,3 +4,4 @@ repos/*
 volumes/*
 redmine*.sql
 config/configuration.yml
+config/database.yml

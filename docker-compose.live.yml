@@ -17,6 +17,7 @@ services:
     volumes:
        - ./.env:/usr/src/redmine/.env
        - ./config/configuration.yml:/usr/src/redmine/config/configuration.yml
+       - ./config/database.yml:/usr/src/redmine/config/database.yml
        - ./volumes/redmine/logs:/usr/src/redmine/log
        - ./cronjob.sh:/usr/src/redmine/cronjob.sh
        - ./crontab:/usr/src/redmine/crontab

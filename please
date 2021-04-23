@@ -8,6 +8,10 @@ up() {
         echo "Please copy configfiguration.yml.example to configfiguration.yml and edit smtp settings"
         exit 1  
     fi
+    if [ ! -f ./config/database.yml ]; then
+        echo "Please copy database.yml.example to database.yml and edit database settings"
+        exit 1  
+    fi
     if [ ! -f ./.env ]; then
         echo "Please copy env_plain to .env and edit settings"
         exit 1  
