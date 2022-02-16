@@ -1,0 +1,49 @@
+version: '3.1'
+
+services:
+
+  redmine-app:
+    image: redmine
+    build: 
+      context: ./4.2/
+      dockerfile: Dockerfile
+    container_name: redmine-app
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      REDMINE_DB_MYSQL: redmine_db
+      REDMINE_DB_PASSWORD: ${REDMINE_DB_PASSWORD}
+      REDMINE_SECRET_KEY_BASE: redmine_key_base
+    volumes:
+       - ./.env:/usr/src/redmine/.env
+       - ./config/configuration.yml:/usr/src/redmine/config/configuration.yml
+       - ./config/database.yml:/usr/src/redmine/config/database.yml
+       - ./volumes/redmine/logs:/usr/src/redmine/log
+       - ./cronjob.sh:/usr/src/redmine/cronjob.sh
+       - ./crontab:/usr/src/redmine/crontab
+       - ./volumes/redmine/files:/usr/src/redmine/files
+    networks:
+      default:
+        ipv4_address: 172.4.8.44
+      redmine_net:
+    links:
+      - redmine_db:db
+
+  redmine_db:
+    image: mysql:5.7
+    container_name: redmine-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${REDMINE_DB_PASSWORD}
+      MYSQL_DATABASE: ${REDMINE_DB}
+    volumes: 
+      - ./volumes/redmine/mysql:/var/lib/mysql
+    networks:
+      - redmine_net
+
+networks:
+  default:
+    external:
+      name: domain_net
+
+  redmine_net:
