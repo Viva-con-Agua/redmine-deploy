@@ -1,4 +1,9 @@
-FROM ruby:2.7-slim-buster
+FROM ruby:2.7-slim-bullseye
+
+ENV TZ=Europe/Berlin
+RUN echo $TZ | tee /etc/timezone 
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime
+RUN dpkg-reconfigure --frontend noninteractive tzdata
 
 # explicitly set uid/gid to guarantee that it won't change in the future
 # the values 999:999 are identical to the current user/group id assigned
@@ -8,11 +13,12 @@ RUN set -eux; \
 	apt-get update; \
 	apt-get install -y --no-install-recommends \
 		ca-certificates \
+		curl \
 		wget \
 		\
 		bzr \
 		git \
-		cron \
+                cron \
 		mercurial \
 		openssh-client \
 		subversion \
@@ -22,53 +28,14 @@ RUN set -eux; \
 		ghostscript \
 		gsfonts \
 		imagemagick \
-		\
-# https://github.com/docker-library/ruby/issues/344
-		shared-mime-info \
-	; \
-	rm -rf /var/lib/apt/lists/*
-
-RUN set -eux; \
-	savedAptMark="$(apt-mark showmanual)"; \
-	apt-get update; \
-	apt-get install -y --no-install-recommends \
-		dirmngr \
-		gnupg \
-	; \
-	rm -rf /var/lib/apt/lists/*; \
-	\
-	dpkgArch="$(dpkg --print-architecture | awk -F- '{ print $NF }')"; \
-	\
 # grab gosu for easy step-down from root
-# https://github.com/tianon/gosu/releases
-	export GOSU_VERSION='1.12'; \
-	wget -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$dpkgArch"; \
-	wget -O /usr/local/bin/gosu.asc "https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-$dpkgArch.asc"; \
-	export GNUPGHOME="$(mktemp -d)"; \
-	gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4; \
-	gpg --batch --verify /usr/local/bin/gosu.asc /usr/local/bin/gosu; \
-	gpgconf --kill all; \
-	rm -r "$GNUPGHOME" /usr/local/bin/gosu.asc; \
-	chmod +x /usr/local/bin/gosu; \
-	gosu nobody true; \
-	\
+		gosu \
 # grab tini for signal processing and zombie killing
-# https://github.com/krallin/tini/releases
-	export TINI_VERSION='0.19.0'; \
-	wget -O /usr/local/bin/tini "https://github.com/krallin/tini/releases/download/v$TINI_VERSION/tini-$dpkgArch"; \
-	wget -O /usr/local/bin/tini.asc "https://github.com/krallin/tini/releases/download/v$TINI_VERSION/tini-$dpkgArch.asc"; \
-	export GNUPGHOME="$(mktemp -d)"; \
-	gpg --batch --keyserver ha.pool.sks-keyservers.net --recv-keys 6380DC428747F6C393FEACA59A84159D7001A4E5; \
-	gpg --batch --verify /usr/local/bin/tini.asc /usr/local/bin/tini; \
-	gpgconf --kill all; \
-	rm -r "$GNUPGHOME" /usr/local/bin/tini.asc; \
-	chmod +x /usr/local/bin/tini; \
-	tini -h; \
-	\
-# reset apt-mark's "manual" list so that "purge --auto-remove" will remove all build dependencies
-	apt-mark auto '.*' > /dev/null; \
-	[ -z "$savedAptMark" ] || apt-mark manual $savedAptMark; \
-	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
+		tini \
+	; \
+# allow imagemagick to use ghostscript for PDF -> PNG thumbnail conversion (4.1+)
+	sed -ri 's/(rights)="none" (pattern="PDF")/\1="read" \2/' /etc/ImageMagick-6/policy.xml; \
+	rm -rf /var/lib/apt/lists/*
 
 ENV RAILS_ENV production
 WORKDIR /usr/src/redmine
@@ -82,11 +49,12 @@ RUN set -eux; \
 	chown redmine:redmine "$HOME"; \
 	chmod 1777 "$HOME"
 
-ENV REDMINE_VERSION 4.2.0
-ENV REDMINE_DOWNLOAD_SHA256 295864c580afa2a926e7a17f2ad10693f9b7a6d9f1ef523edb96b2368e7f07e5
+ENV REDMINE_VERSION 4.2.3
+ENV REDMINE_DOWNLOAD_SHA256 72f633dc954217948558889ca85325fe6410cd18a2d8b39358e5d75932a47a0c
 
 RUN set -eux; \
-	wget -O redmine.tar.gz "https://www.redmine.org/releases/redmine-${REDMINE_VERSION}.tar.gz"; \
+# if we use wget here, we get certificate issues (https://github.com/docker-library/redmine/pull/249#issuecomment-984176479)
+	curl -fL -o redmine.tar.gz "https://www.redmine.org/releases/redmine-${REDMINE_VERSION}.tar.gz"; \
 	echo "$REDMINE_DOWNLOAD_SHA256 *redmine.tar.gz" | sha256sum -c -; \
 	tar -xf redmine.tar.gz --strip-components=1; \
 	rm redmine.tar.gz files/delete.me log/delete.me; \
@@ -103,9 +71,9 @@ RUN set -eux; \
 	savedAptMark="$(apt-mark showmanual)"; \
 	apt-get update; \
 	apt-get install -y --no-install-recommends \
+		default-libmysqlclient-dev \
 		freetds-dev \
 		gcc \
-		libmariadbclient-dev \
 		libpq-dev \
 		libsqlite3-dev \
 		make \
@@ -140,8 +108,6 @@ RUN set -eux; \
 		| xargs -r apt-mark manual \
 	; \
 	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
-
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 VOLUME /usr/src/redmine/files
 

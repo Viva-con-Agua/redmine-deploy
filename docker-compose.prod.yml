@@ -18,13 +18,14 @@ services:
        - ./.env:/usr/src/redmine/.env
        - ./config/configuration.yml:/usr/src/redmine/config/configuration.yml
        - ./config/database.yml:/usr/src/redmine/config/database.yml
+       - ./config/application.rb:/usr/src/redmine/config/application.rb
        - ./volumes/redmine/logs:/usr/src/redmine/log
        - ./cronjob.sh:/usr/src/redmine/cronjob.sh
        - ./crontab:/usr/src/redmine/crontab
        - ./volumes/redmine/files:/usr/src/redmine/files
     networks:
       default:
-        ipv4_address: 172.4.8.44
+        ipv4_address: 172.4.0.4
       redmine_net:
     links:
       - redmine_db:db
