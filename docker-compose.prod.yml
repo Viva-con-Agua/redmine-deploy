@@ -23,9 +23,9 @@ services:
        - ./cronjob.sh:/usr/src/redmine/cronjob.sh
        - ./crontab:/usr/src/redmine/crontab
        - ./volumes/redmine/files:/usr/src/redmine/files
+       - ./volumes/redmine/plugins:/usr/src/redmine/plugins
     networks:
       default:
-        ipv4_address: 172.4.0.4
       redmine_net:
     links:
       - redmine_db:db
